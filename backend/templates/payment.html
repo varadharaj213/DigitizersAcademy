@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment - Course Registration System{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8 col-lg-6">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-credit-card"></i> Payment</h4>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <h5>You are registering for:</h5>
+                    <h4 class="text-primary mt-2">{{ course.title }}</h4>
+                    <p class="mb-1">{{ course.description|truncate(150) }}</p>
+                    <div class="d-flex justify-content-center align-items-center mt-3">
+                        <span class="badge bg-info me-2">{{ course.duration }}</span>
+                        <h3 class="text-primary mb-0">Rs. {{ course.price }}</h3>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <form id="paymentForm">
+                    <input type="hidden" name="course_id" value="{{ course.id }}">
+                    
+                    <div class="mb-3">
+                        <label for="cardName" class="form-label">Name on Card</label>
+                        <input type="text" class="form-control" id="cardName" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="cardNumber" class="form-label">Card Number</label>
+                        <input type="text" class="form-control" id="cardNumber" placeholder="XXXX XXXX XXXX XXXX" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="expDate" class="form-label">Expiration Date</label>
+                            <input type="text" class="form-control" id="expDate" placeholder="MM/YY" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="cvv" class="form-label">CVV</label>
+                            <input type="text" class="form-control" id="cvv" required>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-4">
+                        <button type="button" id="submitPayment" class="btn btn-primary">
+                            <i class="fas fa-lock"></i> Pay Rs. {{ course.price }} Securely
+                        </button>
+                    </div>
+                </form>
+                
+                <div class="text-center mt-3">
+                    <p class="mb-0 text-muted small"><i class="fas fa-shield-alt"></i> Secure payment powered by Stripe</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Processing Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div id="processingPayment">
+                    <div class="spinner-border text-primary mb-3" role="status"></div>
+                    <h5>Processing Payment</h5>
+                    <p class="text-muted">Please wait while we process your payment...</p>
+                </div>
+                
+                <div id="paymentSuccess" style="display: none;">
+                    <i class="fas fa-check-circle text-success fa-4x mb-3"></i>
+                    <h4>Payment Successful!</h4>
+                    <p>You have successfully registered for this course.</p>
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="{{ url_for('registered_courses') }}" class="btn btn-primary">
+                            <i class="fas fa-graduation-cap"></i> Go to My Courses
+                        </a>
+                    </div>
+                </div>
+                
+                <div id="paymentError" style="display: none;">
+                    <i class="fas fa-times-circle text-danger fa-4x mb-3"></i>
+                    <h4>Payment Failed</h4>
+                    <p id="errorMessage">An error occurred during payment processing.</p>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Try Again</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/payment.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const paymentForm = document.getElementById('paymentForm');
+        const submitBtn = document.getElementById('submitPayment');
+        const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+        const processingEl = document.getElementById('processingPayment');
+        const successEl = document.getElementById('paymentSuccess');
+        const errorEl = document.getElementById('paymentError');
+        const errorMsg = document.getElementById('errorMessage');
+        
+        submitBtn.addEventListener('click', function() {
+            if (!paymentForm.checkValidity()) {
+                paymentForm.reportValidity();
+                return;
+            }
+            
+            // Show processing modal
+            processingEl.style.display = 'block';
+            successEl.style.display = 'none';
+            errorEl.style.display = 'none';
+            paymentModal.show();
+            
+            // Send payment request to server
+            fetch('{{ url_for("process_payment") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'course_id': {{ course.id }}
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                processingEl.style.display = 'none';
+                
+                if (data.status === 'success') {
+                    successEl.style.display = 'block';
+                } else {
+                    errorEl.style.display = 'block';
+                    errorMsg.textContent = data.message || 'An error occurred during payment processing.';
+                }
+            })
+            .catch(error => {
+                processingEl.style.display = 'none';
+                errorEl.style.display = 'block';
+                errorMsg.textContent = 'Network error occurred. Please try again.';
+            });
+        });
+    });
+</script>
+{% endblock %}
