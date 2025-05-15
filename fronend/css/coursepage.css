@@ -1,0 +1,27 @@
+     /* Keep your existing styles */
+        
+        /* Add or modify these button styles */
+        .btn-enroll {
+            background-color: #fb873f;
+            color: white !important; /* Force white text color */
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        
+        .btn-enroll:hover {
+            background-color: #e57228;
+            transform: translateY(-2px);
+            color: white !important;
+        }
